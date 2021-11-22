@@ -13,6 +13,9 @@ ubuntu-ros:
 ubuntu-ros2:
 	cd ubuntu/ros2 && make build
 
+ubuntu-ros-all:
+	cd ubuntu/ros-all && make build
+
 ubuntu-node:
 	cd ubuntu/node && make build
 

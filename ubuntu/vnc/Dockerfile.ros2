@@ -1,0 +1,79 @@
+FROM node-ubuntu-local:focal as build
+
+ARG HTTP_PROXY=http://host.docker.internal:7890
+ARG HTTPS_PROXY=http://host.docker.internal:7890
+
+WORKDIR /app
+RUN git clone --recurse-submodules https://github.com/fcwu/docker-ubuntu-vnc-desktop.git vnc
+RUN APT_ARCH=$(dpkg --print-architecture) && \
+        npm install -g yarn && \
+        mkdir -p /src && cp -r vnc/web /src/web && \
+        cd /src/web && yarn && yarn build && \
+        sed -i 's#app/locale/#novnc/app/locale/#' /src/web/dist/static/novnc/app/ui.js && \
+        if [ "${APT_ARCH}" == arm64 ]; then \
+            cd /src/web/dist/static/novnc && patch -p0 < /src/web/novnc-armhf-1.patch; \
+        fi
+
+FROM ubuntu-local:base-focal
+
+# install ros
+RUN . /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/ros2-latest.list && \
+    curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
+    apt-get update && apt-get install ros-foxy-desktop -y
+
+RUN apt-get install -y \
+        libgoogle-glog-dev \
+        libproto-dev \
+        protobuf-compiler \
+        locate \
+        gdb && \
+        updatedb
+
+RUN pip3 install --upgrade urllib3==1.26.6 requests conan && \
+        conan config set general.revisions_enabled=1 && \
+        conan profile new default --detect && \
+        conan profile update settings.compiler.libcxx=libstdc++11 default
+
+RUN echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc && \
+    echo "source /opt/ros/foxy/setup.zsh" >> ~/.zshrc
+
+ARG TINI_VERSION=v0.18.0
+ARG HTTP_PROXY=http://host.docker.internal:7890
+ARG HTTPS_PROXY=http://host.docker.internal:7890
+
+RUN apt update && \
+        apt install -y apache2-utils supervisor nginx sudo net-tools zenity xz-utils \
+        dbus-x11 x11-utils alsa-utils mesa-utils libgl1-mesa-dri xvfb x11vnc \
+        vim-tiny firefox ttf-ubuntu-font-family ttf-wqy-zenhei gtk2-engines-murrine \
+        lxde gtk2-engines-murrine gnome-themes-standard gtk2-engines-pixbuf \
+        arc-theme ffmpeg && \
+        mkdir /usr/local/ffmpeg && ln -s /usr/bin/ffmpeg /usr/local/ffmpeg/ffmpeg
+
+# arm64 amd64 diff
+RUN APT_ARCH="$(dpkg --print-architecture)" && case "${APT_ARCH}" in \
+        amd64)  \
+            curl -fL https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -o tini;; \
+        arm64) \
+            curl -fL https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-arm64 -o tini && \
+            add-apt-repository -r ppa:fcwu-tw/apps;; \
+    esac; \
+    chmod +x tini && mv tini /bin/tini;
+
+COPY --from=build /app/vnc/rootfs/usr/local/lib/web/backend/requirements.txt /tmp/
+
+# python lib
+RUN pip3 install setuptools wheel && pip3 install -r /tmp/requirements.txt && \
+        ln -s /usr/bin/python3 /usr/local/bin/python
+
+COPY --from=build /app/vnc/rootfs /vnc/rootfs
+COPY --from=build /src/web/dist /usr/local/lib/web/frontend
+RUN cp -rp /vnc/rootfs/* / && \
+    ln -sf /usr/local/lib/web/frontend/static/websockify" "/usr/local/lib/web/frontend/static/novnc/utils/websockify && \
+    chmod +x /usr/local/lib/web/frontend/static/websockify/run && \
+    ln -sf /usr/local/lib/web/frontend/static/websockify /usr/local/lib/web/frontend/static/novnc/utils/websockify && \
+	chmod +x /usr/local/lib/web/frontend/static/websockify/run
+
+WORKDIR /root
+ENV HOME=/home/ubuntu \
+    SHELL=/bin/bash
+CMD ["/startup.sh"]
