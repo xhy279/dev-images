@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y ca-certificates; \
 RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime; \
     echo ${TZ} > /etc/timezone;
 
-RUN locale-gen en_US en_US.UTF-8 && \
+RUN locale-gen en_US en_US.UTF-8 zh_CN zh_CN.UTF-8 && \
     update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
 # install oh my zsh
