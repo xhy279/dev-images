@@ -23,7 +23,7 @@ RUN . /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/ros2/ubu
 
 RUN apt-get install -y \
         libgoogle-glog-dev \
-        libproto-dev \
+        libprotobuf-dev \
         protobuf-compiler \
         locate \
         gdb && \

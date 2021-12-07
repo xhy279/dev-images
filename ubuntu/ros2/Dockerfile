@@ -8,7 +8,7 @@ RUN . /etc/lsb-release && echo "deb http://mirrors.aliyun.com/ros2/ubuntu/ `lsb_
 RUN apt-get install -y \
         python3-colcon-common-extensions \
         libgoogle-glog-dev \
-        libproto-dev \
+        libprotobuf-dev \
         protobuf-compiler \
         locate \
         gdb && \
