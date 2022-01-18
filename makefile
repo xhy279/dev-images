@@ -21,3 +21,12 @@ ubuntu-node:
 
 ubuntu-vnc:
 	cd ubuntu/vnc && make build
+
+ubuntu-net:
+	cd ubuntu/net-tool && make build
+
+ubuntu-jdk11:
+	cd ubuntu/java && make build
+
+ubuntu-rust:
+	cd ubuntu/rust && make build
