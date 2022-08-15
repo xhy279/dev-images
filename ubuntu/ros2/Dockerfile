@@ -31,5 +31,8 @@ RUN git clone --depth 1 --branch release-0.5.0 \
     cmake --build . --target install
 RUN ldconfig
 
+# install ros2 rust bindings
+# https://github.com/ros2-rust/ros2_rust
+RUN apt install -y git libclang-dev python3-vcstool 
 
 RUN echo "source /opt/ros/foxy/setup.zsh" >> /root/.zshrc

@@ -59,6 +59,6 @@ RUN curl --proto -y '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 ## install rust relating cmds
 ENV PATH="/root/.cargo/bin:${PATH}"
-RUN cargo install ripgrep
-RUN cargo install --locked bat
-RUN cargo install fd-find
+RUN cargo install ripgrep onefetch bat fd-find broot cargo-cache \
+    cargo-watch cargo-nextest btm sccache
+
